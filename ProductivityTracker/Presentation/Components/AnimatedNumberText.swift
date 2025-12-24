@@ -9,11 +9,11 @@ import SwiftUI
 
 struct AnimatedNumberText: View {
     let value: Double
-    let format: NumberFormatStyle
+    let format: FloatingPointFormatStyle<Double>
 
     @State private var displayValue: Double = 0
 
-    init(value: Double, format: NumberFormatStyle = .number.precision(.fractionLength(0))) {
+    init(value: Double, format: FloatingPointFormatStyle<Double> = .number.precision(.fractionLength(0))) {
         self.value = value
         self.format = format
     }

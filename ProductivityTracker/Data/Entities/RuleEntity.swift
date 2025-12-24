@@ -44,7 +44,7 @@ extension RuleEntity {
 
 extension RuleEntity: Identifiable {}
 
-enum RuleConditionType: String, CaseIterable {
+enum RuleConditionType: String, CaseIterable, Codable {
     case app = "app"
     case url = "url"
     case title = "title"
