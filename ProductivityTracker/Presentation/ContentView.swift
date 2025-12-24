@@ -33,16 +33,12 @@ struct ContentView: View {
             // Sidebar
             SidebarView(selectedNavigation: $selectedNavigation)
         } detail: {
-            // Main content area with liquid glass background
+            // Main content area with animated mesh gradient background
             ZStack {
-                // Base layer - subtle gradient
-                LinearGradient(
-                    colors: [
-                        Color(nsColor: .windowBackgroundColor),
-                        Color(nsColor: .windowBackgroundColor).opacity(0.95)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                // Mesh gradient background
+                MeshGradientBackground(
+                    colors: [.blue, .purple, .pink],
+                    animated: true
                 )
                 .ignoresSafeArea()
 
@@ -122,8 +118,10 @@ struct SidebarView: View {
             List(NavigationItem.allCases, id: \.self, selection: $selectedNavigation) { item in
                 Label(item.rawValue, systemImage: item.icon)
                     .tag(item)
+                    .shortcutTooltip(action: item.rawValue, shortcut: shortcutKey(for: item))
             }
             .listStyle(.sidebar)
+            .hapticFeedback(.selection)
 
             Divider()
 
@@ -134,6 +132,15 @@ struct SidebarView: View {
         }
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 250)
     }
+
+    private func shortcutKey(for item: NavigationItem) -> String {
+        switch item {
+        case .dashboard: return "1"
+        case .analytics: return "2"
+        case .rules: return "3"
+        case .settings: return "4"
+        }
+    }
 }
 
 struct TrackingStatusView: View {
@@ -142,9 +149,11 @@ struct TrackingStatusView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                Circle()
-                    .fill(trackingService.isTracking ? Color.green : Color.gray)
-                    .frame(width: 8, height: 8)
+                StatusTooltip(
+                    isActive: trackingService.isTracking,
+                    activeMessage: "Activity tracking is running",
+                    inactiveMessage: "Activity tracking is paused"
+                )
 
                 Text(trackingService.isTracking ? "Tracking" : "Paused")
                     .font(.caption)
@@ -163,6 +172,8 @@ struct TrackingStatusView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .hapticFeedback(.impact(.medium))
+                .shortcutTooltip(action: "Pause Tracking", shortcut: "⇧T")
             } else {
                 Button(action: {
                     trackingService.resumeTracking()
@@ -173,6 +184,8 @@ struct TrackingStatusView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .hapticFeedback(.notification(.success))
+                .shortcutTooltip(action: "Resume Tracking", shortcut: "⇧T")
             }
         }
     }

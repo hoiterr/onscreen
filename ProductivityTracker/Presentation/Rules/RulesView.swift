@@ -58,33 +58,27 @@ struct RulesView: View {
                             .font(.subheadline)
                     }
                     .buttonStyle(.borderedProminent)
+                    .hapticFeedback(.impact(.light))
+                    .shortcutTooltip(action: "Add New Rule", shortcut: "N")
                 }
 
                 // Rules list
                 GlassCard {
                     VStack(spacing: 0) {
                         if rules.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "list.bullet.rectangle")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(.secondary)
-
-                                Text("No rules defined yet")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
-
-                                Text("Add rules to automatically categorize your activities")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-
-                                Button("Add Your First Rule") {
-                                    showAddRule = true
-                                }
-                                .buttonStyle(.borderedProminent)
-                            }
+                            FirstTimeEmptyState(
+                                icon: "list.bullet.rectangle",
+                                title: "Welcome to Rules!",
+                                steps: [
+                                    "Create rules to automatically categorize activities",
+                                    "Match by app name, URL, or window title",
+                                    "Drag to reorder rule priority"
+                                ],
+                                actionTitle: "Add Your First Rule",
+                                action: { showAddRule = true }
+                            )
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 60)
+                            .padding(.vertical, 40)
                         } else {
                             // Rules table
                             VStack(spacing: 0) {
@@ -94,31 +88,37 @@ struct RulesView: View {
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(width: 60, alignment: .leading)
+                                        .tooltip("Evaluation order (drag to reorder)", position: .top)
 
                                     Text("Name")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(width: 150, alignment: .leading)
+                                        .tooltip("Rule identifier", position: .top)
 
                                     Text("Condition")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(width: 120, alignment: .leading)
+                                        .tooltip("What to match against", position: .top)
 
                                     Text("Pattern")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(minWidth: 150, alignment: .leading)
+                                        .tooltip("Match pattern (supports wildcards)", position: .top)
 
                                     Text("Category")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(width: 120, alignment: .leading)
+                                        .tooltip("Assigned activity category", position: .top)
 
                                     Text("Status")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                         .frame(width: 80, alignment: .leading)
+                                        .tooltip("Enable or disable rule", position: .top)
 
                                     Spacer()
                                 }
@@ -255,6 +255,8 @@ struct RuleRow: View {
             ))
             .toggleStyle(.switch)
             .frame(width: 80)
+            .hapticFeedback(.notification(.success))
+            .tooltip(rule.isEnabled ? "Disable this rule" : "Enable this rule", position: .top)
 
             Spacer()
 
@@ -264,6 +266,8 @@ struct RuleRow: View {
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
+                .hapticFeedback(.impact(.light))
+                .tooltip("Edit rule", position: .top)
 
                 Button(action: onDelete) {
                     Image(systemName: "trash")
@@ -271,6 +275,8 @@ struct RuleRow: View {
                         .foregroundColor(.red)
                 }
                 .buttonStyle(.plain)
+                .hapticFeedback(.custom(.heartbeat))
+                .tooltip("Delete rule", position: .top)
             }
         }
         .padding(.horizontal, 16)

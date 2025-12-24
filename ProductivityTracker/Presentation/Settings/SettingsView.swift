@@ -80,6 +80,7 @@ struct SettingsView: View {
                     ) {
                         Toggle("", isOn: $launchAtLogin)
                             .toggleStyle(.switch)
+                            .hapticFeedback(.notification(.success))
                             .onChange(of: launchAtLogin) { _, newValue in
                                 do {
                                     try LaunchAtLoginService.shared.setLaunchAtLogin(newValue)
@@ -90,6 +91,7 @@ struct SettingsView: View {
                                 }
                             }
                     }
+                    .tooltip("Enable to start tracking automatically", position: .bottom)
                 }
 
                 // Privacy Settings
@@ -126,6 +128,8 @@ struct SettingsView: View {
                                 .foregroundColor(.red)
                         }
                         .buttonStyle(.bordered)
+                        .hapticFeedback(.custom(.heartbeat))
+                        .tooltip("Permanently delete all tracked data", position: .bottom, style: .warning)
                         .alert("Delete All Data?", isPresented: $showDeleteConfirmation) {
                             Button("Cancel", role: .cancel) { }
                             Button("Delete", role: .destructive) {
@@ -168,11 +172,15 @@ struct SettingsView: View {
                                 exportData(format: .csv)
                             }
                             .buttonStyle(.bordered)
+                            .hapticFeedback(.impact(.light))
+                            .tooltip("Export data as comma-separated values", position: .bottom)
 
                             Button("Export JSON") {
                                 exportData(format: .json)
                             }
                             .buttonStyle(.bordered)
+                            .hapticFeedback(.impact(.light))
+                            .tooltip("Export data as JSON format", position: .bottom)
                         }
                     }
                 }
@@ -334,6 +342,8 @@ struct PermissionRow: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .hapticFeedback(.notification(.warning))
+                .tooltip("Open System Settings to grant permission", position: .bottom)
             }
         }
         .padding(.vertical, 4)

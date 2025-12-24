@@ -24,33 +24,36 @@ struct DashboardView: View {
     )
     private var todaySessions: FetchedResults<SessionEntity>
 
+    @State private var showMilestoneConfetti = false
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Dashboard")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+        ZStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Dashboard")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
 
-                        Text(Date().formatted(date: .complete, time: .omitted))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            Text(Date().formatted(date: .complete, time: .omitted))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+
+                        Spacer()
+
+                        // Current activity indicator
+                        if let currentWindow = trackingService.currentWindow {
+                            CurrentActivityCard(window: currentWindow)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                        }
                     }
-                    .transition(.opacity.combined(with: .move(edge: .leading)))
-
-                    Spacer()
-
-                    // Current activity indicator
-                    if let currentWindow = trackingService.currentWindow {
-                        CurrentActivityCard(window: currentWindow)
-                            .transition(.asymmetric(
-                                insertion: .scale(scale: 0.8).combined(with: .opacity),
-                                removal: .opacity
-                            ))
-                    }
-                }
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: trackingService.currentWindow?.appName)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: trackingService.currentWindow?.appName)
 
                 // Stats grid
                 LazyVGrid(columns: [
@@ -90,6 +93,33 @@ struct DashboardView: View {
             }
             .padding()
         }
+        .emptyState(
+            isVisible: todaySessions.isEmpty && !trackingService.isTracking,
+            icon: "chart.bar.fill",
+            title: "Welcome to Your Dashboard",
+            message: "Start tracking to see your productivity insights. Your activity will be automatically categorized and displayed here.",
+            actionTitle: "Start Tracking",
+            action: { trackingService.startTracking() }
+        )
+
+        // Milestone confetti celebration
+        ConfettiEffect(isActive: $showMilestoneConfetti)
+        }
+        .onChange(of: totalDuration) { newDuration in
+            checkMilestones(duration: newDuration)
+        }
+    }
+
+    private var totalDuration: TimeInterval {
+        todaySessions.reduce(0) { $0 + $1.duration }
+    }
+
+    private func checkMilestones(duration: TimeInterval) {
+        let hours = duration / 3600
+        // Celebrate every hour milestone
+        if hours >= 1 && Int(hours) != Int((duration - 60) / 3600) {
+            showMilestoneConfetti = true
+        }
     }
 }
 
@@ -97,7 +127,6 @@ struct DashboardView: View {
 
 struct GlassCard<Content: View>: View {
     let content: Content
-    @State private var isHovered = false
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
@@ -106,18 +135,9 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity)
-            .padding(20)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(isHovered ? 0.2 : 0.1), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(isHovered ? 0.08 : 0.05), radius: isHovered ? 12 : 10, x: 0, y: isHovered ? 6 : 5)
-            .scaleEffect(isHovered ? 1.01 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
-            .onHover { hovering in
-                isHovered = hovering
-            }
+            .enhancedGlass(material: .regular, cornerRadius: 16, padding: 20)
+            .cardTransform3D(intensity: 0.5, shadowDepth: true)
+            .hoverHaptic()
     }
 }
 
@@ -199,7 +219,7 @@ struct TotalTimeCard: View {
                     Spacer()
                 }
 
-                Text(categoryService.formatDuration(totalDuration))
+                AnimatedDurationText(seconds: totalDuration)
                     .font(.system(size: 32, weight: .bold, design: .rounded))
 
                 Text("Total Time Today")
@@ -207,6 +227,7 @@ struct TotalTimeCard: View {
                     .foregroundColor(.secondary)
             }
         }
+        .tooltip("Total time tracked across all activities today", position: .bottom)
     }
 }
 
@@ -260,7 +281,7 @@ struct SessionCountCard: View {
                     Spacer()
                 }
 
-                Text("\(count)")
+                AnimatedIntText(value: count)
                     .font(.system(size: 32, weight: .bold, design: .rounded))
 
                 Text("Sessions")
@@ -268,6 +289,7 @@ struct SessionCountCard: View {
                     .foregroundColor(.secondary)
             }
         }
+        .tooltip("Number of distinct activity sessions today", position: .bottom)
     }
 }
 
@@ -283,11 +305,21 @@ struct CategoryBreakdownCard: View {
         categoryStats.sorted { $0.value > $1.value }
     }
 
+    private var totalTime: TimeInterval {
+        categoryStats.values.reduce(0, +)
+    }
+
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Category Breakdown")
-                    .font(.headline)
+                HStack {
+                    Text("Category Breakdown")
+                        .font(.headline)
+
+                    Spacer()
+
+                    HelpIconWithTooltip("View how your time is distributed across different activity categories")
+                }
 
                 if sortedCategories.allSatisfy({ $0.1 == 0 }) {
                     Text("No activity yet today")
@@ -297,13 +329,27 @@ struct CategoryBreakdownCard: View {
                         .padding(.vertical, 20)
                         .transition(.opacity)
                 } else {
-                    ForEach(Array(sortedCategories.filter { $0.1 > 0 }.enumerated()), id: \.element.0) { index, element in
-                        CategoryRow(category: element.0, duration: element.1)
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .leading).combined(with: .opacity),
-                                removal: .opacity
-                            ))
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(Double(index) * 0.05), value: element.1)
+                    HStack(spacing: 32) {
+                        // Progress ring visualization
+                        MultiProgressRing(
+                            segments: sortedCategories.filter { $0.1 > 0 }.map { category, duration in
+                                (duration / totalTime, category.color, category.displayName)
+                            },
+                            size: 120,
+                            lineWidth: 16
+                        )
+
+                        // Category list
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(sortedCategories.filter { $0.1 > 0 }.enumerated()), id: \.element.0) { index, element in
+                                CategoryRow(category: element.0, duration: element.1, totalDuration: totalTime)
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .leading).combined(with: .opacity),
+                                        removal: .opacity
+                                    ))
+                                    .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(Double(index) * 0.05), value: element.1)
+                            }
+                        }
                     }
                 }
             }
@@ -314,7 +360,12 @@ struct CategoryBreakdownCard: View {
 struct CategoryRow: View {
     let category: ActivityCategory
     let duration: TimeInterval
+    let totalDuration: TimeInterval
     @EnvironmentObject var categoryService: CategoryService
+
+    private var percentage: Double {
+        totalDuration > 0 ? (duration / totalDuration) * 100 : 0
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -328,17 +379,23 @@ struct CategoryRow: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(categoryService.formatDuration(duration))
+                AnimatedDurationText(seconds: duration)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            // Progress indicator (visual representation)
-            Circle()
-                .fill(category.color.opacity(0.3))
-                .frame(width: 8, height: 8)
+            // Percentage badge
+            AnimatedNumberText(value: percentage, suffix: "%")
+                .font(.caption.bold())
+                .foregroundColor(category.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(category.color.opacity(0.15))
+                )
         }
         .padding(.vertical, 4)
     }

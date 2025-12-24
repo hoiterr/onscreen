@@ -85,6 +85,7 @@ struct AnalyticsView: View {
                                     .cornerRadius(8)
                             }
                             .buttonStyle(.plain)
+                            .hapticFeedback(.selection)
                         }
 
                         Button(action: {
@@ -212,27 +213,34 @@ struct SummaryMetricsView: View {
                         icon: "clock.fill",
                         color: .blue
                     )
+                    .tooltip("Total tracked time in the selected period")
 
                     MetricItem(
                         title: "Work Focus",
                         value: String(format: "%.0f%%", workPercentage),
                         icon: "briefcase.fill",
-                        color: .blue
+                        color: .blue,
+                        isPercentage: true
                     )
+                    .tooltip("Percentage of time spent on work activities")
 
                     MetricItem(
                         title: "Leisure",
                         value: String(format: "%.0f%%", leisurePercentage),
                         icon: "gamecontroller.fill",
-                        color: .green
+                        color: .green,
+                        isPercentage: true
                     )
+                    .tooltip("Percentage of time spent on leisure activities")
 
                     MetricItem(
                         title: "Sessions",
                         value: "\(sessions.count)",
                         icon: "square.stack.3d.up.fill",
-                        color: .purple
+                        color: .purple,
+                        isCount: true
                     )
+                    .tooltip("Number of distinct activity sessions")
                 }
             }
         }
@@ -244,6 +252,17 @@ struct MetricItem: View {
     let value: String
     let icon: String
     let color: Color
+    let isPercentage: Bool
+    let isCount: Bool
+
+    init(title: String, value: String, icon: String, color: Color, isPercentage: Bool = false, isCount: Bool = false) {
+        self.title = title
+        self.value = value
+        self.icon = icon
+        self.color = color
+        self.isPercentage = isPercentage
+        self.isCount = isCount
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -251,8 +270,16 @@ struct MetricItem: View {
                 .font(.title2)
                 .foregroundStyle(color)
 
-            Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+            if isPercentage, let numericValue = Double(value.replacingOccurrences(of: "%", with: "")) {
+                AnimatedNumberText(value: numericValue, suffix: "%")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+            } else if isCount, let intValue = Int(value) {
+                AnimatedIntText(value: intValue)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+            } else {
+                Text(value)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+            }
 
             Text(title)
                 .font(.caption)
@@ -285,11 +312,11 @@ struct CategoryDistributionChart: View {
                     .font(.headline)
 
                 if chartData.isEmpty {
-                    Text("No data available")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 40)
+                    NoDataEmptyState(
+                        title: "No Category Data",
+                        message: "Activity will be categorized here"
+                    )
+                    .frame(height: 200)
                 } else {
                     Chart(chartData, id: \.0) { category, duration in
                         SectorMark(
@@ -302,6 +329,7 @@ struct CategoryDistributionChart: View {
                     }
                     .frame(height: 300)
                     .chartLegend(position: .trailing, alignment: .center)
+                    .animatedChart(delay: 0.1)
 
                     // Legend
                     HStack(spacing: 24) {
@@ -371,11 +399,11 @@ struct DailyBreakdownChart: View {
                     .font(.headline)
 
                 if dailyData.isEmpty {
-                    Text("No data available")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 40)
+                    NoDataEmptyState(
+                        title: "No Daily Data",
+                        message: "Daily breakdown will appear here"
+                    )
+                    .frame(height: 200)
                 } else {
                     Chart(dailyData, id: \.0) { date, category, duration in
                         BarMark(
@@ -399,6 +427,7 @@ struct DailyBreakdownChart: View {
                             AxisValueLabel(format: .dateTime.month().day())
                         }
                     }
+                    .animatedChart(delay: 0.2)
                 }
             }
         }
@@ -421,11 +450,11 @@ struct TimelineView: View {
                     .font(.headline)
 
                 if sortedSessions.isEmpty {
-                    Text("No activity yet today")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 40)
+                    NoDataEmptyState(
+                        title: "No Activity Today",
+                        message: "Your timeline will appear here"
+                    )
+                    .frame(height: 150)
                 } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 2) {
@@ -488,11 +517,11 @@ struct TopAppsChart: View {
                     .font(.headline)
 
                 if topApps.isEmpty {
-                    Text("No data available")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 40)
+                    NoDataEmptyState(
+                        title: "No App Data",
+                        message: "Top applications will appear here"
+                    )
+                    .frame(height: 200)
                 } else {
                     Chart(topApps, id: \.0) { appName, duration in
                         BarMark(
@@ -512,6 +541,7 @@ struct TopAppsChart: View {
                             }
                         }
                     }
+                    .animatedChart(delay: 0.3)
                 }
             }
         }
