@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	IMPORTANT: App Sandbox Configuration
+
+	For full functionality, this app is designed to run WITHOUT sandboxing.
+	If you need to sandbox the app (for App Store distribution), enable the
+	following entitlements. Note that Screen Recording permission must still
+	be granted manually by the user in System Settings.
+	-->
+
+	<!-- Option 1: No Sandbox (Recommended for development) -->
+	<!-- Comment out or remove for App Store submission -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!-- Option 2: With Sandbox (For App Store) -->
+	<!-- Uncomment these if distributing via App Store: -->
+
+	<!-- Enable App Sandbox -->
+	<!-- <key>com.apple.security.app-sandbox</key>
+	<true/> -->
+
+	<!-- File Access - User Selected Files -->
+	<!-- <key>com.apple.security.files.user-selected.read-write</key>
+	<true/> -->
+
+	<!-- Allow Apple Events (for browser URL access) -->
+	<!-- <key>com.apple.security.automation.apple-events</key>
+	<true/> -->
+
+	<!-- Outgoing Network Connections (if needed in future) -->
+	<!-- <key>com.apple.security.network.client</key>
+	<true/> -->
+
+	<!-- Note: Screen Recording permission cannot be granted via entitlements -->
+	<!-- Users must manually enable in: -->
+	<!-- System Settings → Privacy & Security → Screen Recording -->
+
+	<!-- Hardened Runtime (for notarization) -->
+
+	<!-- Disable Library Validation (if using plugins) -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<false/>
+
+	<!-- Allow DYLD Environment Variables (debugging only) -->
+	<key>com.apple.security.cs.allow-dyld-environment-variables</key>
+	<false/>
+
+	<!-- Allow Unsigned Executable Memory (for JIT, etc.) -->
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<false/>
+
+	<!-- Allow Just-In-Time Compilation -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<false/>
+
+	<!-- Debugging Tool (for Xcode debugging) -->
+	<key>com.apple.security.get-task-allow</key>
+	<true/>
+</dict>
+</plist>
