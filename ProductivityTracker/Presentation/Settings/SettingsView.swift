@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage("idleTimeoutMinutes") private var idleTimeoutMinutes: Int = 5
     @AppStorage("debounceThresholdSeconds") private var debounceThresholdSeconds: Int = 5
     @AppStorage("dataRetentionMonths") private var dataRetentionMonths: Int = 12
+    @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
 
     @State private var showDeleteConfirmation = false
     @State private var showExportOptions = false
@@ -69,6 +70,25 @@ struct SettingsView: View {
                             Text("seconds")
                                 .foregroundColor(.secondary)
                         }
+                    }
+
+                    Divider()
+
+                    SettingRow(
+                        title: "Launch at Login",
+                        description: "Automatically start tracking when you log in"
+                    ) {
+                        Toggle("", isOn: $launchAtLogin)
+                            .toggleStyle(.switch)
+                            .onChange(of: launchAtLogin) { _, newValue in
+                                do {
+                                    try LaunchAtLoginService.shared.setLaunchAtLogin(newValue)
+                                } catch {
+                                    print("Failed to set launch at login: \(error)")
+                                    // Revert on failure
+                                    launchAtLogin = !newValue
+                                }
+                            }
                     }
                 }
 

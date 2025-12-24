@@ -16,6 +16,7 @@ class TrackingService: ObservableObject {
     @Published private(set) var currentSession: SessionEntity?
     @Published private(set) var currentWindow: ActiveWindow?
     @Published private(set) var todayTotalDuration: TimeInterval = 0
+    @Published var lastError: AppError?
 
     private var trackingTimer: Timer?
     private var pollInterval: TimeInterval = 2.0 // Poll every 2 seconds
@@ -39,6 +40,13 @@ class TrackingService: ObservableObject {
 
     func startTracking() {
         guard !isTracking else { return }
+
+        // Check permissions before starting
+        if !windowTracker.checkScreenRecordingPermission() {
+            lastError = .permissionDenied(.screenRecording)
+            print("⚠️ Screen Recording permission not granted")
+            // Continue anyway - will track apps without window titles
+        }
 
         isTracking = true
 

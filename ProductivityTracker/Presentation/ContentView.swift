@@ -46,20 +46,45 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
 
-                // Content
+                // Content with animated transitions
                 Group {
                     switch selectedNavigation {
                     case .dashboard:
                         DashboardView()
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .leading).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     case .analytics:
                         AnalyticsView()
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     case .rules:
                         RulesView()
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     case .settings:
                         SettingsView()
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     }
                 }
                 .padding()
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedNavigation)
+            }
+        }
+        .errorAlert($trackingService.lastError)
+        .onReceive(NotificationCenter.default.publisher(for: .navigateTo)) { notification in
+            if let navigationItem = notification.object as? NavigationItem {
+                withAnimation {
+                    selectedNavigation = navigationItem
+                }
             }
         }
     }

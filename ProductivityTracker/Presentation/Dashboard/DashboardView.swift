@@ -20,7 +20,7 @@ struct DashboardView: View {
             Calendar.current.startOfDay(for: Date()) as NSDate,
             Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))! as NSDate
         ),
-        animation: .default
+        animation: .spring(response: 0.4, dampingFraction: 0.8)
     )
     private var todaySessions: FetchedResults<SessionEntity>
 
@@ -37,14 +37,20 @@ struct DashboardView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
 
                     Spacer()
 
                     // Current activity indicator
                     if let currentWindow = trackingService.currentWindow {
                         CurrentActivityCard(window: currentWindow)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: trackingService.currentWindow?.appName)
 
                 // Stats grid
                 LazyVGrid(columns: [
@@ -53,18 +59,34 @@ struct DashboardView: View {
                     GridItem(.flexible(), spacing: 16)
                 ], spacing: 16) {
                     TotalTimeCard(sessions: Array(todaySessions))
+                        .transition(.scale.combined(with: .opacity))
                     ActiveSessionCard()
+                        .transition(.scale.combined(with: .opacity))
                     SessionCountCard(count: todaySessions.count)
+                        .transition(.scale.combined(with: .opacity))
                 }
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: todaySessions.count)
 
                 // Category breakdown
                 CategoryBreakdownCard(sessions: Array(todaySessions))
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .opacity
+                    ))
 
                 // Top apps
                 TopAppsCard(sessions: Array(todaySessions))
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .opacity
+                    ))
 
                 // Recent activity
                 RecentActivityCard(sessions: Array(todaySessions))
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             }
             .padding()
         }
@@ -75,6 +97,7 @@ struct DashboardView: View {
 
 struct GlassCard<Content: View>: View {
     let content: Content
+    @State private var isHovered = false
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
@@ -87,22 +110,42 @@ struct GlassCard<Content: View>: View {
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    .stroke(Color.white.opacity(isHovered ? 0.2 : 0.1), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+            .shadow(color: Color.black.opacity(isHovered ? 0.08 : 0.05), radius: isHovered ? 12 : 10, x: 0, y: isHovered ? 6 : 5)
+            .scaleEffect(isHovered ? 1.01 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+            .onHover { hovering in
+                isHovered = hovering
+            }
     }
 }
 
 struct CurrentActivityCard: View {
     let window: ActiveWindow
     @EnvironmentObject var trackingService: TrackingService
+    @State private var isPulsing = false
 
     var body: some View {
         GlassCard {
             HStack(spacing: 12) {
-                Image(systemName: "app.fill")
-                    .font(.title2)
-                    .foregroundStyle(.blue)
+                ZStack {
+                    // Pulsing background circle
+                    Circle()
+                        .fill(.blue.opacity(0.2))
+                        .frame(width: 40, height: 40)
+                        .scaleEffect(isPulsing ? 1.2 : 1.0)
+                        .opacity(isPulsing ? 0 : 1)
+
+                    Image(systemName: "app.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                }
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                        isPulsing = true
+                    }
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(window.appName)
@@ -118,9 +161,22 @@ struct CurrentActivityCard: View {
                 }
 
                 Spacer()
+
+                // Live indicator
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: .green, radius: 2)
+
+                    Text("LIVE")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.green)
+                }
             }
         }
-        .frame(width: 300)
+        .frame(width: 320)
     }
 }
 
@@ -239,9 +295,15 @@ struct CategoryBreakdownCard: View {
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, 20)
+                        .transition(.opacity)
                 } else {
-                    ForEach(sortedCategories.filter { $0.1 > 0 }, id: \.0) { category, duration in
-                        CategoryRow(category: category, duration: duration)
+                    ForEach(Array(sortedCategories.filter { $0.1 > 0 }.enumerated()), id: \.element.0) { index, element in
+                        CategoryRow(category: element.0, duration: element.1)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .leading).combined(with: .opacity),
+                                removal: .opacity
+                            ))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(Double(index) * 0.05), value: element.1)
                     }
                 }
             }

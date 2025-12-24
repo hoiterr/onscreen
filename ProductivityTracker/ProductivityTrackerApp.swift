@@ -27,6 +27,40 @@ struct ProductivityTrackerApp: App {
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             CommandGroup(replacing: .newItem) { }
+
+            // Navigation and tracking shortcuts
+            CommandGroup(after: .sidebar) {
+                Button("Dashboard") {
+                    NotificationCenter.default.post(name: .navigateTo, object: NavigationItem.dashboard)
+                }
+                .keyboardShortcut("1", modifiers: .command)
+
+                Button("Analytics") {
+                    NotificationCenter.default.post(name: .navigateTo, object: NavigationItem.analytics)
+                }
+                .keyboardShortcut("2", modifiers: .command)
+
+                Button("Rules") {
+                    NotificationCenter.default.post(name: .navigateTo, object: NavigationItem.rules)
+                }
+                .keyboardShortcut("3", modifiers: .command)
+
+                Button("Settings") {
+                    NotificationCenter.default.post(name: .navigateTo, object: NavigationItem.settings)
+                }
+                .keyboardShortcut("4", modifiers: .command)
+
+                Divider()
+
+                Button(trackingService.isTracking ? "Pause Tracking" : "Resume Tracking") {
+                    if trackingService.isTracking {
+                        trackingService.pauseTracking()
+                    } else {
+                        trackingService.resumeTracking()
+                    }
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+            }
         }
 
         Settings {

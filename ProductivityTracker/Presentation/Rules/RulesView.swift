@@ -21,6 +21,20 @@ struct RulesView: View {
     @State private var showAddRule = false
     @State private var editingRule: RuleEntity?
 
+    private func moveRules(from source: IndexSet, to destination: Int) {
+        // Convert to array for manipulation
+        var rulesArray = Array(rules)
+        rulesArray.move(fromOffsets: source, toOffset: destination)
+
+        // Update priorities
+        for (index, rule) in rulesArray.enumerated() {
+            rule.priority = Int16(index)
+        }
+
+        // Save changes
+        try? viewContext.save()
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -114,29 +128,39 @@ struct RulesView: View {
 
                                 Divider()
 
-                                // Rules
+                                // Rules with drag-to-reorder
                                 ForEach(Array(rules.enumerated()), id: \.element) { index, rule in
-                                    RuleRow(
-                                        rule: rule,
-                                        priority: index + 1,
-                                        onEdit: {
-                                            editingRule = rule
-                                        },
-                                        onDelete: {
-                                            ruleEngine.deleteRule(rule)
-                                        },
-                                        onToggle: {
-                                            rule.isEnabled.toggle()
-                                            ruleEngine.updateRule(rule)
-                                        }
-                                    )
+                                    VStack(spacing: 0) {
+                                        RuleRow(
+                                            rule: rule,
+                                            priority: index + 1,
+                                            onEdit: {
+                                                editingRule = rule
+                                            },
+                                            onDelete: {
+                                                ruleEngine.deleteRule(rule)
+                                            },
+                                            onToggle: {
+                                                rule.isEnabled.toggle()
+                                                ruleEngine.updateRule(rule)
+                                            }
+                                        )
 
-                                    if index < rules.count - 1 {
-                                        Divider()
+                                        if index < rules.count - 1 {
+                                            Divider()
+                                        }
                                     }
+                                }
+                                .onMove { from, to in
+                                    moveRules(from: from, to: to)
                                 }
                             }
                         }
+                    }
+                }
+                .toolbar {
+                    if !rules.isEmpty {
+                        EditButton()
                     }
                 }
 
