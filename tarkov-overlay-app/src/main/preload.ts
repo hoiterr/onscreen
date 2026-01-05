@@ -29,6 +29,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
   setSetting: (key: string, value: any) => ipcRenderer.invoke('set-setting', key, value),
 
+  // Screenshot monitor
+  detectTarkovPaths: () => ipcRenderer.invoke('detect-tarkov-paths'),
+  browseScreenshotsFolder: () => ipcRenderer.invoke('browse-screenshots-folder'),
+  setScreenshotsPath: (path: string) => ipcRenderer.invoke('set-screenshots-path', path),
+  getMonitorStatus: () => ipcRenderer.invoke('get-monitor-status'),
+  onMonitorStatus: (callback: (data: any) => void) => {
+    ipcRenderer.on('monitor-status', (_, data) => callback(data));
+  },
+
   // Remove listener
   removeListener: (channel: string, callback: any) => {
     ipcRenderer.removeListener(channel, callback);
@@ -45,6 +54,11 @@ export interface ElectronAPI {
   toggleOverlay: () => Promise<boolean>;
   getSetting: (key: string) => Promise<any>;
   setSetting: (key: string, value: any) => Promise<void>;
+  detectTarkovPaths: () => Promise<any>;
+  browseScreenshotsFolder: () => Promise<string | null>;
+  setScreenshotsPath: (path: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+  getMonitorStatus: () => Promise<{ isRunning: boolean; path: string; processedCount: number }>;
+  onMonitorStatus: (callback: (data: any) => void) => void;
   removeListener: (channel: string, callback: any) => void;
 }
 
